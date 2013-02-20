@@ -6,9 +6,6 @@
 #
 #$t3 numero de iteraciones para reducir los clusters
 #$t4 contador del ciclo para reducir clusters
-#$t7 contador para ciclo 1 de buscarminimo en la matriz
-#$t8 contador para ciclo 2 de buscarminimo en la matriz
-#$t9 maximo numero de iteraciones para el ciclo 2 de buscar minimo
 
 .data 
 
@@ -16,10 +13,10 @@ n:        .word 7
 m:        .word 2
 k:        .word 4
 matriz:   .word 0, 391, 50, 171, 27, 48, 229, 0, 0, 365, 220, 374, 359, 162, 0, 0, 0, 195, 77, 98, 233, 0, 0, 0, 0, 154, 139, 58, 0, 0, 0, 0, 0, 21, 212, 0, 0, 0, 0, 0, 0, 197, 0, 0, 0, 0, 0, 0, 0
-datos:    .word 12, 281, 150, 28, 50, 293, 25, 123, 7, 259, 4, 241, 45, 75
+datos:    .word 12, 281, 150, 28, 50, 293, 25, 123, 7, 259, 4, 241, 35, 75
 maxint:   .word 2147483647
-imin:        .word 0
-jmin:        .word 0
+imin:     .word 0
+jmin:     .word 0
 
 .text
 
@@ -27,13 +24,11 @@ main:
         lw $t0 n                #cargo n en $t0
         lw $t1 k                #cargo k en $t2
         
-        sub $t3,$t0,$t1         #numero de iteraciones = n-k
-        li $t4,0                #contador=0 ciclo reduccion de clusters
+        sub $s0,$t0,$t1         #numero de iteraciones = n-k
+        move $s1, $zero         #contador=0 ciclo reduccion de clusters
 loopred:                        #inicio ciclo de reduccion de clusters
         lw $t5, maxint          #asigno al minimo el maximo entero representable
-        
         la $t6, matriz          #cargo la direccion de inicio de la matriz
-        
                                 #comienzo de buscarminimo en la matriz
         li $t7, 0               #contador en 0 (i)
 mini1:
@@ -87,8 +82,8 @@ sumaj:  addi $t8, $t8, 1        #j=j+1
         lw $t7, m
         li $t8, 0
 cntrd:  
-        lw $t5, 0($t1)          #cargo el primer parametro de la fila "imin"
-        lw $t6, 0($t2)          #cargo el primer parametro de la fila "jmin"
+        lw $t5, 0($t1)          #cargo el parametro de la fila "imin"
+        lw $t6, 0($t2)          #cargo el parametro de la fila "jmin"
         add $t5, $t5, $t6       #sumo los parametros
         li $t6, 2               #cargo 2 en $t6
         div $t5, $t6            #divido la suma de parametros entre 2
@@ -102,13 +97,52 @@ cntrd:
         addi $t8, $t8, 1
         blt $t8, $t7, cntrd
                                 #fin calcular nuevos centroides
+
+                                #inicio reduccion de matriz de datos
         
-        addi $t4, $t4, 1
-        blt $t4, $t3, loopred
+        
+
+        lw $t7, jmin            #cargo la fila no necesaria de la matriz datos
+        addi $t7, $t7, 1        #sumo 1 para comenzar desde el siguiente
+        lw $t8, n               #cargo n para que las iteraciones sean n-jmin
+        subu $t8, $t8, 1        #-1 a n porque no interesa mover la ultima columna
+redatos:
+        move $t0, $t7           #busco direccion en datos del cluster jmin+1
+        mul $t0, $t0, 4         
+        lw $t1, m
+        mul $t0, $t0, $t1
+        la $t1, datos($t0)
+        
+        move $t0, $t7           #busco direccion en datos del cluster jmin
+        subu $t0, $t0, 1
+        mul $t0, $t0, 4         
+        lw $t2, m
+        mul $t0, $t0, $t2
+        la $t2, datos($t0)
+        
+        lw $t3, m
+        li $t4, 0
+movdato:
+        lw $t6, 0($t1)          #cargo el parametro de la fila "jmin+1"
+        
+        sw $t6, 0($t2)          #guardo ese parametro en jmin
+        
+        
+        addi $t1, $t1, 4        #desplazo una palabra
+        addi $t2, $t2, 4        #desplazo una palabra
+
+        addi, $t4, $t4, 1       #+1 al iterador
+        blt $t4, $t3, movdato   #salto al comienzo del ciclo movdato
+        
+        addi, $t7, $t7, 1       #+1 al iterador
+        blt $t7, $t8, redatos   #salto al comienzo del ciclo redatos
+        
+        
+rematrz:
+        
+        addi $s1, $s1, 1
+        blt $s1, $s0, loopred
                                 #Fin Ciclo de reduccion de clusters
-        move $a0, $t5
-        li $v0, 1
-        syscall
         
 
 fin:    li $v0, 10              #Finalizo el programa
